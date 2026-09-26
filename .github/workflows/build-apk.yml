@@ -23,20 +23,34 @@ jobs:
 
       - name: Extract Android project
         run: |
+          mkdir -p project
           unzip -o CheckCalendar-Clone-FullScreen.zip -d project
 
-      - name: Find project directory
+      - name: Find Gradle project
         run: |
-          echo "Project contents:"
-          find project -maxdepth 3 -type f | sort
+          echo "Searching for Gradle project..."
+          find project -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build APK
-        working-directory: project
         run: |
-          if [ -f ./gradlew ]; then
+          SETTINGS=$(find project -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) | head -n 1)
+
+          if [ -z "$SETTINGS" ]; then
+            echo "ERROR: Gradle project not found"
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$SETTINGS")
+
+          echo "Gradle project found at:"
+          echo "$PROJECT_DIR"
+
+          cd "$PROJECT_DIR"
+
+          if [ -f "./gradlew" ]; then
             chmod +x ./gradlew
             ./gradlew assembleDebug
           else
